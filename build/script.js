@@ -831,51 +831,1749 @@ var require_qrcode = __commonJS({
 // src/script.ts
 var import_qrcode_svg = __toESM(require_qrcode());
 
-// node_modules/@zwave-js/core/build/esm/qr/definitions.js
-var QRCodeVersion;
-(function(QRCodeVersion2) {
-  QRCodeVersion2[QRCodeVersion2["S2"] = 0] = "S2";
-  QRCodeVersion2[QRCodeVersion2["SmartStart"] = 1] = "SmartStart";
-})(QRCodeVersion || (QRCodeVersion = {}));
-var ProvisioningInformationType;
-(function(ProvisioningInformationType2) {
-  ProvisioningInformationType2[ProvisioningInformationType2["ProductType"] = 0] = "ProductType";
-  ProvisioningInformationType2[ProvisioningInformationType2["ProductId"] = 1] = "ProductId";
-  ProvisioningInformationType2[ProvisioningInformationType2["MaxInclusionRequestInterval"] = 2] = "MaxInclusionRequestInterval";
-  ProvisioningInformationType2[ProvisioningInformationType2["UUID16"] = 3] = "UUID16";
-  ProvisioningInformationType2[ProvisioningInformationType2["SupportedProtocols"] = 4] = "SupportedProtocols";
-  ProvisioningInformationType2[ProvisioningInformationType2["Name"] = 50] = "Name";
-  ProvisioningInformationType2[ProvisioningInformationType2["Location"] = 51] = "Location";
-  ProvisioningInformationType2[ProvisioningInformationType2["SmartStartInclusionSetting"] = 52] = "SmartStartInclusionSetting";
-  ProvisioningInformationType2[ProvisioningInformationType2["AdvancedJoining"] = 53] = "AdvancedJoining";
-  ProvisioningInformationType2[ProvisioningInformationType2["BootstrappingMode"] = 54] = "BootstrappingMode";
-  ProvisioningInformationType2[ProvisioningInformationType2["NetworkStatus"] = 55] = "NetworkStatus";
-})(ProvisioningInformationType || (ProvisioningInformationType = {}));
-
-// node_modules/@zwave-js/core/build/esm/definitions/SecurityClass.js
-var SecurityClass;
-(function(SecurityClass2) {
-  SecurityClass2[SecurityClass2["Temporary"] = -2] = "Temporary";
-  SecurityClass2[SecurityClass2["None"] = -1] = "None";
-  SecurityClass2[SecurityClass2["S2_Unauthenticated"] = 0] = "S2_Unauthenticated";
-  SecurityClass2[SecurityClass2["S2_Authenticated"] = 1] = "S2_Authenticated";
-  SecurityClass2[SecurityClass2["S2_AccessControl"] = 2] = "S2_AccessControl";
-  SecurityClass2[SecurityClass2["S0_Legacy"] = 7] = "S0_Legacy";
-})(SecurityClass || (SecurityClass = {}));
-var securityClassOrder = [
-  SecurityClass.S2_AccessControl,
-  SecurityClass.S2_Authenticated,
-  SecurityClass.S2_Unauthenticated,
-  SecurityClass.S0_Legacy
-];
-
-// node_modules/@zwave-js/core/build/esm/dsk/index.js
-function isValidDSK(dsk) {
-  const patternMatches = /^(\d{5}-){7}\d{5}$/.test(dsk);
-  if (!patternMatches)
+// node_modules/@zwave-js/shared/build/esm/uint8array-extras.js
+var uint8ArrayStringified = "[object Uint8Array]";
+var arrayBufferStringified = "[object ArrayBuffer]";
+function isType(value, typeConstructor, typeStringified) {
+  if (!value) {
     return false;
-  return dsk.split("-").map((p) => parseInt(p, 10)).every((p) => p <= 65535);
+  }
+  if (value.constructor === typeConstructor) {
+    return true;
+  }
+  return Object.prototype.toString.call(value) === typeStringified;
 }
+function isUint8Array(value) {
+  return isType(value, Uint8Array, uint8ArrayStringified);
+}
+function isArrayBuffer(value) {
+  return isType(value, ArrayBuffer, arrayBufferStringified);
+}
+function isArrayLike(value) {
+  return typeof value === "object" && value !== null && "length" in value && typeof value.length === "number";
+}
+function isUint8ArrayOrArrayBuffer(value) {
+  return isUint8Array(value) || isArrayBuffer(value);
+}
+function assertUint8Array(value) {
+  if (!isUint8Array(value)) {
+    throw new TypeError(`Expected \`Uint8Array\`, got \`${typeof value}\``);
+  }
+}
+function assertUint8ArrayOrArrayBuffer(value) {
+  if (!isUint8ArrayOrArrayBuffer(value)) {
+    throw new TypeError(`Expected \`Uint8Array\` or \`ArrayBuffer\`, got \`${typeof value}\``);
+  }
+}
+function concatUint8Arrays(arrays, totalLength) {
+  if (arrays.length === 0) {
+    return new Uint8Array(0);
+  }
+  totalLength ??= arrays.reduce((accumulator, currentValue) => accumulator + currentValue.length, 0);
+  const returnValue = new Uint8Array(totalLength);
+  let offset = 0;
+  for (let array of arrays) {
+    if (isUint8Array(array)) {
+      if (offset + array.length > totalLength) {
+        array = array.subarray(0, totalLength - offset);
+      }
+    } else if (isArrayLike(array)) {
+      if (offset + array.length > totalLength) {
+        array = Uint8Array.from(array).subarray(0, totalLength - offset);
+      }
+    } else {
+      throw new TypeError(`Expected \`Uint8Array\` or a numeric array, got \`${typeof array}\``);
+    }
+    returnValue.set(array, offset);
+    offset += array.length;
+    if (offset >= totalLength)
+      break;
+  }
+  return returnValue;
+}
+function areUint8ArraysEqual(a, b) {
+  assertUint8Array(a);
+  assertUint8Array(b);
+  if (a === b) {
+    return true;
+  }
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let index = 0; index < a.length; index++) {
+    if (a[index] !== b[index]) {
+      return false;
+    }
+  }
+  return true;
+}
+var cachedDecoders = {
+  utf8: new globalThis.TextDecoder("utf8")
+};
+function uint8ArrayToString(array, encoding = "utf8") {
+  assertUint8ArrayOrArrayBuffer(array);
+  cachedDecoders[encoding] ??= new globalThis.TextDecoder(encoding);
+  return cachedDecoders[encoding].decode(array);
+}
+function assertString(value) {
+  if (typeof value !== "string") {
+    throw new TypeError(`Expected \`string\`, got \`${typeof value}\``);
+  }
+}
+var cachedEncoder = new globalThis.TextEncoder();
+function stringToUint8Array(string) {
+  assertString(string);
+  return cachedEncoder.encode(string);
+}
+function base64ToBase64Url(base64) {
+  return base64.replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+}
+var MAX_BLOCK_SIZE = 65535;
+function uint8ArrayToBase64(array, options) {
+  assertUint8Array(array);
+  const { urlSafe = false } = options ?? {};
+  let base64;
+  if (array.length < MAX_BLOCK_SIZE) {
+    base64 = globalThis.btoa(String.fromCodePoint.apply(null, array));
+  } else {
+    base64 = "";
+    for (const value of array) {
+      base64 += String.fromCodePoint(value);
+    }
+    base64 = globalThis.btoa(base64);
+  }
+  return urlSafe ? base64ToBase64Url(base64) : base64;
+}
+var byteToHexLookupTable = Array.from({ length: 256 }, (_, index) => index.toString(16).padStart(2, "0"));
+function uint8ArrayToHex(array) {
+  assertUint8Array(array);
+  let hexString = "";
+  for (let index = 0; index < array.length; index++) {
+    hexString += byteToHexLookupTable[array[index]];
+  }
+  return hexString;
+}
+var hexToDecimalLookupTable = {
+  0: 0,
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  6: 6,
+  7: 7,
+  8: 8,
+  9: 9,
+  a: 10,
+  b: 11,
+  c: 12,
+  d: 13,
+  e: 14,
+  f: 15,
+  A: 10,
+  B: 11,
+  C: 12,
+  D: 13,
+  E: 14,
+  F: 15
+};
+function hexToUint8Array(hexString) {
+  assertString(hexString);
+  if (hexString.length % 2 !== 0) {
+    throw new Error("Invalid Hex string length.");
+  }
+  const resultLength = hexString.length / 2;
+  const bytes = new Uint8Array(resultLength);
+  for (let index = 0; index < resultLength; index++) {
+    const highNibble = hexToDecimalLookupTable[hexString[index * 2]];
+    const lowNibble = hexToDecimalLookupTable[hexString[index * 2 + 1]];
+    if (highNibble === void 0 || lowNibble === void 0) {
+      throw new Error(`Invalid Hex character encountered at position ${index * 2}`);
+    }
+    bytes[index] = highNibble << 4 | lowNibble;
+  }
+  return bytes;
+}
+function indexOf(array, value) {
+  const arrayLength = array.length;
+  const valueLength = value.length;
+  if (valueLength === 0) {
+    return -1;
+  }
+  if (valueLength > arrayLength) {
+    return -1;
+  }
+  const validOffsetLength = arrayLength - valueLength;
+  for (let index = 0; index <= validOffsetLength; index++) {
+    let isMatch = true;
+    for (let index2 = 0; index2 < valueLength; index2++) {
+      if (array[index + index2] !== value[index2]) {
+        isMatch = false;
+        break;
+      }
+    }
+    if (isMatch) {
+      return index;
+    }
+  }
+  return -1;
+}
+function includes(array, value) {
+  return indexOf(array, value) !== -1;
+}
+
+// node_modules/@zwave-js/shared/build/esm/Bytes.js
+var Bytes = class _Bytes extends Uint8Array {
+  /** Returns `true` if both `buf` and `other` have exactly the same bytes,`false` otherwise. Equivalent to `buf.compare(otherBuffer) === 0`. */
+  equals(other) {
+    return areUint8ArraysEqual(this, other);
+  }
+  /**
+      Convert a value to a `Buffer` without copying its data.
+  
+      This can be useful for converting a Node.js `Buffer` to a portable `Buffer` instance. The Node.js `Buffer` is already an `Uint8Array` subclass, but [it alters some behavior](https://sindresorhus.com/blog/goodbye-nodejs-buffer), so it can be useful to cast it to a pure `Uint8Array` or portable `Buffer` before returning it.
+  
+      Tip: If you want a copy, just call `.slice()` on the return value.
+      */
+  static view(value) {
+    if (value instanceof ArrayBuffer) {
+      return new this(value);
+    }
+    if (ArrayBuffer.isView(value)) {
+      return new this(value.buffer, value.byteOffset, value.byteLength);
+    }
+    throw new TypeError(`Unsupported value, got \`${typeof value}\`.`);
+  }
+  static from(data, encodingOrMapfn, thisArg) {
+    if (typeof data === "string") {
+      const encoding = encodingOrMapfn;
+      switch (encoding) {
+        case "ascii":
+        case "utf-8":
+        case "utf8":
+        case void 0:
+          return _Bytes.view(stringToUint8Array(data));
+        case "hex":
+          return _Bytes.view(hexToUint8Array(data));
+      }
+      throw new Error(`Unsupported encoding: ${encoding}`);
+    } else if (isUint8ArrayOrArrayBuffer(data)) {
+      return new _Bytes(data);
+    } else if ("length" in data) {
+      return _Bytes.view(super.from(data));
+    } else {
+      return _Bytes.view(super.from(data, encodingOrMapfn, thisArg));
+    }
+  }
+  /**
+   * Allocates a new `Buffer` of `size` bytes. If `fill` is `undefined`, the`Buffer` will be zero-filled.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.alloc(5);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer 00 00 00 00 00>
+   * ```
+   *
+   * If `size` is larger than {@link constants.MAX_LENGTH} or smaller than 0, `ERR_OUT_OF_RANGE` is thrown.
+   *
+   * If `fill` is specified, the allocated `Buffer` will be initialized by calling `buf.fill(fill)`.
+   *
+   * A `TypeError` will be thrown if `size` is not a number.
+   * @since v5.10.0
+   * @param size The desired length of the new `Buffer`.
+   * @param [fill=0] A value to pre-fill the new `Buffer` with.
+   * @param [encoding='utf8'] If `fill` is a string, this is its encoding.
+   */
+  static alloc(size, fill) {
+    const ret = new _Bytes(size);
+    if (fill !== void 0) {
+      ret.fill(fill);
+    }
+    return ret;
+  }
+  toString(encoding = "utf8") {
+    switch (encoding) {
+      case "hex":
+        return uint8ArrayToHex(this);
+      case "base64":
+        return uint8ArrayToBase64(this);
+      case "base64url":
+        return uint8ArrayToBase64(this, { urlSafe: true });
+      case "ucs-2":
+      case "ucs2":
+      case "utf16le":
+        return uint8ArrayToString(this, "utf-16le");
+      case "ascii":
+      case "latin1":
+      case "binary":
+      // For TextDecoder, these are aliases for "windows-1252"
+      // which is not supported with small-icu or without ICU.
+      // When dealing with actual ASCII data, there is no difference
+      // to simply using "utf8" instead.
+      default:
+        return uint8ArrayToString(this, "utf-8");
+    }
+  }
+  subarray(start, end) {
+    return _Bytes.view(super.subarray(start, end));
+  }
+  /**
+   * Equivalent to `buf.indexOf() !== -1`.
+   *
+   * @since v5.3.0
+   * @param value What to search for.
+   * @param [byteOffset=0] Where to begin searching in `buf`. If negative, then offset is calculated from the end of `buf`.
+   * @param [encoding='utf8'] If `value` is a string, this is its encoding.
+   * @return `true` if `value` was found in `buf`, `false` otherwise.
+   */
+  includes(value, byteOffset = 0) {
+    if (typeof value === "number") {
+      return super.includes(value, byteOffset);
+    } else if (byteOffset) {
+      return includes(this.subarray(byteOffset), value);
+    } else {
+      return includes(this, value);
+    }
+  }
+  // /**
+  //  * Returns `true` if `obj` is a `Buffer`, `false` otherwise.
+  //  *
+  //  * ```js
+  //  * import { Buffer } from 'node:buffer';
+  //  *
+  //  * Buffer.isBuffer(Buffer.alloc(10)); // true
+  //  * Buffer.isBuffer(Buffer.from('foo')); // true
+  //  * Buffer.isBuffer('a string'); // false
+  //  * Buffer.isBuffer([]); // false
+  //  * Buffer.isBuffer(new Uint8Array(1024)); // false
+  //  * ```
+  //  * @since v0.1.101
+  //  */
+  // public static isBuffer(obj: any): obj is Buffer {
+  // 	return obj && obj instanceof Buffer;
+  // }
+  /**
+   * Returns a new `Buffer` which is the result of concatenating all the `Buffer` instances in the `list` together.
+   *
+   * If the list has no items, or if the `totalLength` is 0, then a new zero-length `Buffer` is returned.
+   *
+   * If `totalLength` is not provided, it is calculated from the `Buffer` instances
+   * in `list` by adding their lengths.
+   *
+   * If `totalLength` is provided, it is coerced to an unsigned integer. If the
+   * combined length of the `Buffer`s in `list` exceeds `totalLength`, the result is
+   * truncated to `totalLength`.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * // Create a single `Buffer` from a list of three `Buffer` instances.
+   *
+   * const buf1 = Buffer.alloc(10);
+   * const buf2 = Buffer.alloc(14);
+   * const buf3 = Buffer.alloc(18);
+   * const totalLength = buf1.length + buf2.length + buf3.length;
+   *
+   * console.log(totalLength);
+   * // Prints: 42
+   *
+   * const bufA = Buffer.concat([buf1, buf2, buf3], totalLength);
+   *
+   * console.log(bufA);
+   * // Prints: <Buffer 00 00 00 00 ...>
+   * console.log(bufA.length);
+   * // Prints: 42
+   * ```
+   *
+   * `Buffer.concat()` may also use the internal `Buffer` pool like `new Buffer()` does.
+   * @since v0.7.11
+   * @param list List of `Buffer` or {@link Uint8Array} instances to concatenate.
+   * @param totalLength Total length of the `Buffer` instances in `list` when concatenated.
+   */
+  static concat(list, totalLength) {
+    return _Bytes.view(concatUint8Arrays(list, totalLength));
+  }
+  getDataView() {
+    return new DataView(this.buffer, this.byteOffset, this.byteLength);
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset` as big-endian.
+   *
+   * `value` is interpreted and written as a two's complement signed integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(8);
+   *
+   * buf.writeBigInt64BE(0x0102030405060708n, 0);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer 01 02 03 04 05 06 07 08>
+   * ```
+   * @since v12.0.0, v10.20.0
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy: `0 <= offset <= buf.length - 8`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeBigInt64BE(value, offset = 0) {
+    const view = this.getDataView();
+    view.setBigInt64(offset, value, false);
+    return offset + 8;
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset` as little-endian.
+   *
+   * `value` is interpreted and written as a two's complement signed integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(8);
+   *
+   * buf.writeBigInt64LE(0x0102030405060708n, 0);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer 08 07 06 05 04 03 02 01>
+   * ```
+   * @since v12.0.0, v10.20.0
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy: `0 <= offset <= buf.length - 8`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeBigInt64LE(value, offset = 0) {
+    const view = this.getDataView();
+    view.setBigInt64(offset, value, true);
+    return offset + 8;
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset` as big-endian.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(8);
+   *
+   * buf.writeBigUInt64BE(0xdecafafecacefaden, 0);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer de ca fa fe ca ce fa de>
+   * ```
+   * @since v12.0.0, v10.20.0
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy: `0 <= offset <= buf.length - 8`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeBigUInt64BE(value, offset = 0) {
+    const view = this.getDataView();
+    view.setBigUint64(offset, value, false);
+    return offset + 8;
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset` as little-endian
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(8);
+   *
+   * buf.writeBigUInt64LE(0xdecafafecacefaden, 0);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer de fa ce ca fe fa ca de>
+   * ```
+   *
+   * @since v12.0.0, v10.20.0
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy: `0 <= offset <= buf.length - 8`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeBigUInt64LE(value, offset = 0) {
+    const view = this.getDataView();
+    view.setBigUint64(offset, value, true);
+    return offset + 8;
+  }
+  /**
+   * Writes `byteLength` bytes of `value` to `buf` at the specified `offset`as little-endian. Supports up to 48 bits of accuracy. Behavior is undefined
+   * when `value` is anything other than an unsigned integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(6);
+   *
+   * buf.writeUIntLE(0x1234567890ab, 0, 6);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer ab 90 78 56 34 12>
+   * ```
+   * @since v0.5.5
+   * @param value Number to be written to `buf`.
+   * @param offset Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - byteLength`.
+   * @param byteLength Number of bytes to write. Must satisfy `0 < byteLength <= 6`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeUIntLE(value, offset, byteLength) {
+    switch (byteLength) {
+      case 1:
+        return this.writeUInt8(value, offset);
+      case 2:
+        return this.writeUInt16LE(value, offset);
+      case 3: {
+        let ret = this.writeUInt16LE(value & 65535, offset);
+        ret = this.writeUInt8(value >>> 16, ret);
+        return ret;
+      }
+      case 4:
+        return this.writeUInt32LE(value, offset);
+      // Numbers > 32 bit need to be converted to BigInt for the bitwise operations to work
+      case 5: {
+        const big = BigInt(value);
+        const low = Number(big & 0xffffffffn);
+        const high = Number(big >> 32n);
+        let ret = this.writeUInt32LE(low, offset);
+        ret = this.writeUInt8(high, ret);
+        return ret;
+      }
+      case 6: {
+        const big = BigInt(value);
+        const low = Number(big & 0xffffffffn);
+        const high = Number(big >> 32n);
+        let ret = this.writeUInt32LE(low, offset);
+        ret = this.writeUInt16LE(high, ret);
+        return ret;
+      }
+      default:
+        throw new RangeError(`The value of "byteLength" is out of range. It must be >= 1 and <= 6. Received ${byteLength}`);
+    }
+  }
+  /**
+   * Writes `byteLength` bytes of `value` to `buf` at the specified `offset`as big-endian. Supports up to 64 bits of accuracy. Behavior is undefined
+   * when `value` is anything other than an unsigned integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(6);
+   *
+   * buf.writeUIntBE(0x1234567890ab, 0, 6);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer 12 34 56 78 90 ab>
+   * ```
+   * @since v0.5.5
+   * @param value Number to be written to `buf`.
+   * @param offset Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - byteLength`.
+   * @param byteLength Number of bytes to write. Must satisfy `0 < byteLength <= 8`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeUIntBE(value, offset, byteLength) {
+    switch (byteLength) {
+      case 1:
+        return this.writeUInt8(value, offset);
+      case 2:
+        return this.writeUInt16BE(value, offset);
+      case 3: {
+        let ret = this.writeUInt16BE(value >> 8, offset);
+        ret = this.writeUInt8(value & 255, ret);
+        return ret;
+      }
+      case 4:
+        return this.writeUInt32BE(value, offset);
+      // Numbers > 32 bit need to be converted to BigInt for the bitwise operations to work
+      case 5: {
+        const big = BigInt(value);
+        const high = Number(big >> 8n);
+        const low = Number(big & 0xffn);
+        let ret = this.writeUInt32BE(high, offset);
+        ret = this.writeUInt8(low, ret);
+        return ret;
+      }
+      case 6: {
+        const big = BigInt(value);
+        const high = Number(big >> 16n);
+        const low = Number(big & 0xffffn);
+        let ret = this.writeUInt32BE(high, offset);
+        ret = this.writeUInt16BE(low, ret);
+        return ret;
+      }
+      case 7: {
+        const big = BigInt(value);
+        const high = Number(big >> 24n);
+        const mid = Number(big >> 8n & 0xffffn);
+        const low = Number(big & 0xffn);
+        let ret = this.writeUInt32BE(high, offset);
+        ret = this.writeUInt16BE(mid, ret);
+        ret = this.writeUInt8(low, ret);
+        return ret;
+      }
+      case 8: {
+        const ret = this.writeBigUInt64BE(BigInt(value), offset);
+        return ret;
+      }
+      default:
+        throw new RangeError(`The value of "byteLength" is out of range. It must be >= 1 and <= 6. Received ${byteLength}`);
+    }
+  }
+  /**
+   * Writes `byteLength` bytes of `value` to `buf` at the specified `offset`as little-endian. Supports up to 48 bits of accuracy. Behavior is undefined
+   * when `value` is anything other than a signed integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(6);
+   *
+   * buf.writeIntLE(0x1234567890ab, 0, 6);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer ab 90 78 56 34 12>
+   * ```
+   * @since v0.11.15
+   * @param value Number to be written to `buf`.
+   * @param offset Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - byteLength`.
+   * @param byteLength Number of bytes to write. Must satisfy `0 < byteLength <= 6`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeIntLE(value, offset, byteLength) {
+    switch (byteLength) {
+      case 1:
+        return this.writeInt8(value, offset);
+      case 2:
+        return this.writeInt16LE(value, offset);
+      case 3: {
+        let ret = this.writeInt16LE(value & 65535, offset);
+        ret = this.writeInt8(value >> 16, ret);
+        return ret;
+      }
+      case 4:
+        return this.writeInt32LE(value, offset);
+      case 5:
+      case 6:
+        throw new RangeError(`writeIntLE is currently not implemented for byteLength ${byteLength}`);
+      default:
+        throw new RangeError(`The value of "byteLength" is out of range. It must be >= 1 and <= 6. Received ${byteLength}`);
+    }
+  }
+  /**
+   * Writes `byteLength` bytes of `value` to `buf` at the specified `offset`as big-endian. Supports up to 48 bits of accuracy. Behavior is undefined when`value` is anything other than a
+   * signed integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(6);
+   *
+   * buf.writeIntBE(0x1234567890ab, 0, 6);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer 12 34 56 78 90 ab>
+   * ```
+   * @since v0.11.15
+   * @param value Number to be written to `buf`.
+   * @param offset Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - byteLength`.
+   * @param byteLength Number of bytes to write. Must satisfy `0 < byteLength <= 6`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeIntBE(value, offset, byteLength) {
+    switch (byteLength) {
+      case 1:
+        return this.writeInt8(value, offset);
+      case 2:
+        return this.writeInt16BE(value, offset);
+      case 3: {
+        let ret = this.writeInt8(value >> 16, offset);
+        ret = this.writeInt16BE(value & 65535, ret);
+        return ret;
+      }
+      case 4:
+        return this.writeInt32BE(value, offset);
+      case 5:
+      case 6:
+        throw new RangeError(`writeIntBE is currently not implemented for byteLength ${byteLength}`);
+      default:
+        throw new RangeError(`The value of "byteLength" is out of range. It must be >= 1 and <= 6. Received ${byteLength}`);
+    }
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset`. `value` must be a
+   * valid unsigned 8-bit integer. Behavior is undefined when `value` is anything
+   * other than an unsigned 8-bit integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(4);
+   *
+   * buf.writeUInt8(0x3, 0);
+   * buf.writeUInt8(0x4, 1);
+   * buf.writeUInt8(0x23, 2);
+   * buf.writeUInt8(0x42, 3);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer 03 04 23 42>
+   * ```
+   * @since v0.5.0
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - 1`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeUInt8(value, offset = 0) {
+    const view = this.getDataView();
+    view.setUint8(offset, value);
+    return offset + 1;
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset` as little-endian. The `value`must be a valid unsigned 16-bit integer. Behavior is undefined when `value` is
+   * anything other than an unsigned 16-bit integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(4);
+   *
+   * buf.writeUInt16LE(0xdead, 0);
+   * buf.writeUInt16LE(0xbeef, 2);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer ad de ef be>
+   * ```
+   * @since v0.5.5
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - 2`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeUInt16LE(value, offset = 0) {
+    const view = this.getDataView();
+    view.setUint16(offset, value, true);
+    return offset + 2;
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset` as big-endian. The `value`must be a valid unsigned 16-bit integer. Behavior is undefined when `value`is anything other than an
+   * unsigned 16-bit integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(4);
+   *
+   * buf.writeUInt16BE(0xdead, 0);
+   * buf.writeUInt16BE(0xbeef, 2);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer de ad be ef>
+   * ```
+   * @since v0.5.5
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - 2`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeUInt16BE(value, offset = 0) {
+    const view = this.getDataView();
+    view.setUint16(offset, value, false);
+    return offset + 2;
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset` as little-endian. The `value`must be a valid unsigned 32-bit integer. Behavior is undefined when `value` is
+   * anything other than an unsigned 32-bit integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(4);
+   *
+   * buf.writeUInt32LE(0xfeedface, 0);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer ce fa ed fe>
+   * ```
+   * @since v0.5.5
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - 4`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeUInt32LE(value, offset = 0) {
+    const view = this.getDataView();
+    view.setUint32(offset, value, true);
+    return offset + 4;
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset` as big-endian. The `value`must be a valid unsigned 32-bit integer. Behavior is undefined when `value`is anything other than an
+   * unsigned 32-bit integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(4);
+   *
+   * buf.writeUInt32BE(0xfeedface, 0);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer fe ed fa ce>
+   * ```
+   * @since v0.5.5
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - 4`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeUInt32BE(value, offset = 0) {
+    const view = this.getDataView();
+    view.setUint32(offset, value, false);
+    return offset + 4;
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset`. `value` must be a valid
+   * signed 8-bit integer. Behavior is undefined when `value` is anything other than
+   * a signed 8-bit integer.
+   *
+   * `value` is interpreted and written as a two's complement signed integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(2);
+   *
+   * buf.writeInt8(2, 0);
+   * buf.writeInt8(-2, 1);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer 02 fe>
+   * ```
+   * @since v0.5.0
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - 1`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeInt8(value, offset = 0) {
+    const view = this.getDataView();
+    view.setInt8(offset, value);
+    return offset + 1;
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset` as little-endian.  The `value`must be a valid signed 16-bit integer. Behavior is undefined when `value` is
+   * anything other than a signed 16-bit integer.
+   *
+   * The `value` is interpreted and written as a two's complement signed integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(2);
+   *
+   * buf.writeInt16LE(0x0304, 0);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer 04 03>
+   * ```
+   * @since v0.5.5
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - 2`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeInt16LE(value, offset = 0) {
+    const view = this.getDataView();
+    view.setInt16(offset, value, true);
+    return offset + 2;
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset` as big-endian.  The `value`must be a valid signed 16-bit integer. Behavior is undefined when `value` is
+   * anything other than a signed 16-bit integer.
+   *
+   * The `value` is interpreted and written as a two's complement signed integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(2);
+   *
+   * buf.writeInt16BE(0x0102, 0);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer 01 02>
+   * ```
+   * @since v0.5.5
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - 2`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeInt16BE(value, offset = 0) {
+    const view = this.getDataView();
+    view.setInt16(offset, value, false);
+    return offset + 2;
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset` as little-endian. The `value`must be a valid signed 32-bit integer. Behavior is undefined when `value` is
+   * anything other than a signed 32-bit integer.
+   *
+   * The `value` is interpreted and written as a two's complement signed integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(4);
+   *
+   * buf.writeInt32LE(0x05060708, 0);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer 08 07 06 05>
+   * ```
+   * @since v0.5.5
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - 4`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeInt32LE(value, offset = 0) {
+    const view = this.getDataView();
+    view.setInt32(offset, value, true);
+    return offset + 4;
+  }
+  /**
+   * Writes `value` to `buf` at the specified `offset` as big-endian. The `value`must be a valid signed 32-bit integer. Behavior is undefined when `value` is
+   * anything other than a signed 32-bit integer.
+   *
+   * The `value` is interpreted and written as a two's complement signed integer.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = new Buffer(4);
+   *
+   * buf.writeInt32BE(0x01020304, 0);
+   *
+   * console.log(buf);
+   * // Prints: <Buffer 01 02 03 04>
+   * ```
+   * @since v0.5.5
+   * @param value Number to be written to `buf`.
+   * @param [offset=0] Number of bytes to skip before starting to write. Must satisfy `0 <= offset <= buf.length - 4`.
+   * @return `offset` plus the number of bytes written.
+   */
+  writeInt32BE(value, offset = 0) {
+    const view = this.getDataView();
+    view.setInt32(offset, value, false);
+    return offset + 4;
+  }
+  /**
+   * Reads an unsigned, big-endian 64-bit integer from `buf` at the specified`offset`.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff]);
+   *
+   * console.log(buf.readBigUInt64BE(0));
+   * // Prints: 4294967295n
+   * ```
+   * @since v12.0.0, v10.20.0
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy: `0 <= offset <= buf.length - 8`.
+   */
+  readBigUInt64BE(offset = 0) {
+    const view = this.getDataView();
+    return view.getBigUint64(offset, false);
+  }
+  /**
+   * Reads an unsigned, little-endian 64-bit integer from `buf` at the specified`offset`.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff]);
+   *
+   * console.log(buf.readBigUInt64LE(0));
+   * // Prints: 18446744069414584320n
+   * ```
+   * @since v12.0.0, v10.20.0
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy: `0 <= offset <= buf.length - 8`.
+   */
+  readBigUInt64LE(offset = 0) {
+    const view = this.getDataView();
+    return view.getBigUint64(offset, true);
+  }
+  /**
+   * Reads a signed, big-endian 64-bit integer from `buf` at the specified `offset`.
+   *
+   * Integers read from a `Buffer` are interpreted as two's complement signed
+   * values.
+   * @since v12.0.0, v10.20.0
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy: `0 <= offset <= buf.length - 8`.
+   */
+  readBigInt64BE(offset = 0) {
+    const view = this.getDataView();
+    return view.getBigInt64(offset, false);
+  }
+  /**
+   * Reads a signed, little-endian 64-bit integer from `buf` at the specified`offset`.
+   *
+   * Integers read from a `Buffer` are interpreted as two's complement signed
+   * values.
+   * @since v12.0.0, v10.20.0
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy: `0 <= offset <= buf.length - 8`.
+   */
+  readBigInt64LE(offset = 0) {
+    const view = this.getDataView();
+    return view.getBigInt64(offset, true);
+  }
+  /**
+   * Reads `byteLength` number of bytes from `buf` at the specified `offset` and interprets the result as an unsigned, little-endian integer supporting
+   * up to 48 bits of accuracy.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0x12, 0x34, 0x56, 0x78, 0x90, 0xab]);
+   *
+   * console.log(buf.readUIntLE(0, 6).toString(16));
+   * // Prints: ab9078563412
+   * ```
+   * @since v0.11.15
+   * @param offset Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - byteLength`.
+   * @param byteLength Number of bytes to read. Must satisfy `0 < byteLength <= 6`.
+   */
+  readUIntLE(offset, byteLength) {
+    switch (byteLength) {
+      case 1:
+        return this.readUInt8(offset);
+      case 2:
+        return this.readUInt16LE(offset);
+      case 3: {
+        let ret = this.readUInt16LE(offset);
+        ret |= this.readUInt8(offset + 2) << 16;
+        return ret;
+      }
+      case 4:
+        return this.readUInt32LE(offset);
+      // Numbers > 32 bit need to be converted to BigInt for the bitwise operations to work
+      case 5: {
+        let ret = BigInt(this.readUInt32LE(offset));
+        ret |= BigInt(this.readUInt8(offset + 4)) << 32n;
+        return Number(ret);
+      }
+      case 6: {
+        let ret = BigInt(this.readUInt32LE(offset));
+        ret |= BigInt(this.readUInt16LE(offset + 4)) << 32n;
+        return Number(ret);
+      }
+      default:
+        throw new RangeError(`The value of "byteLength" is out of range. It must be >= 1 and <= 6. Received ${byteLength}`);
+    }
+  }
+  /**
+   * Reads `byteLength` number of bytes from `buf` at the specified `offset` and interprets the result as an unsigned big-endian integer supporting
+   * up to 48 bits of accuracy.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0x12, 0x34, 0x56, 0x78, 0x90, 0xab]);
+   *
+   * console.log(buf.readUIntBE(0, 6).toString(16));
+   * // Prints: 1234567890ab
+   * console.log(buf.readUIntBE(1, 6).toString(16));
+   * // Throws ERR_OUT_OF_RANGE.
+   * ```
+   * @since v0.11.15
+   * @param offset Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - byteLength`.
+   * @param byteLength Number of bytes to read. Must satisfy `0 < byteLength <= 6`.
+   */
+  readUIntBE(offset, byteLength) {
+    switch (byteLength) {
+      case 1:
+        return this.readUInt8(offset);
+      case 2:
+        return this.readUInt16BE(offset);
+      case 3: {
+        let ret = this.readUInt8(offset) << 16;
+        ret |= this.readUInt16BE(offset + 1);
+        return ret;
+      }
+      case 4:
+        return this.readUInt32BE(offset);
+      // Numbers > 32 bit need to be converted to BigInt for the bitwise operations to work
+      case 5: {
+        let ret = BigInt(this.readUInt32BE(offset)) << 32n;
+        ret |= BigInt(this.readUInt8(offset + 4));
+        return Number(ret);
+      }
+      case 6: {
+        let ret = BigInt(this.readUInt32BE(offset)) << 32n;
+        ret |= BigInt(this.readUInt16BE(offset + 4));
+        return Number(ret);
+      }
+      default:
+        throw new RangeError(`The value of "byteLength" is out of range. It must be >= 1 and <= 6. Received ${byteLength}`);
+    }
+  }
+  /**
+   * Reads `byteLength` number of bytes from `buf` at the specified `offset` and interprets the result as a little-endian, two's complement signed value
+   * supporting up to 48 bits of accuracy.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0x12, 0x34, 0x56, 0x78, 0x90, 0xab]);
+   *
+   * console.log(buf.readIntLE(0, 6).toString(16));
+   * // Prints: -546f87a9cbee
+   * ```
+   * @since v0.11.15
+   * @param offset Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - byteLength`.
+   * @param byteLength Number of bytes to read. Must satisfy `0 < byteLength <= 6`.
+   */
+  readIntLE(offset, byteLength) {
+    switch (byteLength) {
+      case 1:
+        return this.readInt8(offset);
+      case 2:
+        return this.readInt16LE(offset);
+      case 3: {
+        let ret = this.readUInt16LE(offset);
+        ret |= this.readInt8(offset + 2) << 16;
+        return ret;
+      }
+      case 4:
+        return this.readInt32LE(offset);
+      case 5:
+      case 6:
+        throw new RangeError(`readIntLE is currently not implemented for byteLength ${byteLength}`);
+      default:
+        throw new RangeError(`The value of "byteLength" is out of range. It must be >= 1 and <= 6. Received ${byteLength}`);
+    }
+  }
+  /**
+   * Reads `byteLength` number of bytes from `buf` at the specified `offset` and interprets the result as a big-endian, two's complement signed value
+   * supporting up to 48 bits of accuracy.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0x12, 0x34, 0x56, 0x78, 0x90, 0xab]);
+   *
+   * console.log(buf.readIntBE(0, 6).toString(16));
+   * // Prints: 1234567890ab
+   * console.log(buf.readIntBE(1, 6).toString(16));
+   * // Throws ERR_OUT_OF_RANGE.
+   * console.log(buf.readIntBE(1, 0).toString(16));
+   * // Throws ERR_OUT_OF_RANGE.
+   * ```
+   * @since v0.11.15
+   * @param offset Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - byteLength`.
+   * @param byteLength Number of bytes to read. Must satisfy `0 < byteLength <= 6`.
+   */
+  readIntBE(offset, byteLength) {
+    switch (byteLength) {
+      case 1:
+        return this.readInt8(offset);
+      case 2:
+        return this.readInt16BE(offset);
+      case 3: {
+        let ret = this.readInt8(offset) << 16;
+        ret |= this.readUInt16BE(offset + 1);
+        return ret;
+      }
+      case 4:
+        return this.readInt32BE(offset);
+      case 5:
+      case 6:
+        throw new RangeError(`readIntBE is currently not implemented for byteLength ${byteLength}`);
+      default:
+        throw new RangeError(`The value of "byteLength" is out of range. It must be >= 1 and <= 6. Received ${byteLength}`);
+    }
+  }
+  /**
+   * Reads an unsigned 8-bit integer from `buf` at the specified `offset`.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([1, -2]);
+   *
+   * console.log(buf.readUInt8(0));
+   * // Prints: 1
+   * console.log(buf.readUInt8(1));
+   * // Prints: 254
+   * console.log(buf.readUInt8(2));
+   * // Throws ERR_OUT_OF_RANGE.
+   * ```
+   * @since v0.5.0
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - 1`.
+   */
+  readUInt8(offset = 0) {
+    const view = this.getDataView();
+    return view.getUint8(offset);
+  }
+  /**
+   * Reads an unsigned, little-endian 16-bit integer from `buf` at the specified`offset`.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0x12, 0x34, 0x56]);
+   *
+   * console.log(buf.readUInt16LE(0).toString(16));
+   * // Prints: 3412
+   * console.log(buf.readUInt16LE(1).toString(16));
+   * // Prints: 5634
+   * console.log(buf.readUInt16LE(2).toString(16));
+   * // Throws ERR_OUT_OF_RANGE.
+   * ```
+   * @since v0.5.5
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - 2`.
+   */
+  readUInt16LE(offset = 0) {
+    const view = this.getDataView();
+    return view.getUint16(offset, true);
+  }
+  /**
+   * Reads an unsigned, big-endian 16-bit integer from `buf` at the specified`offset`.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0x12, 0x34, 0x56]);
+   *
+   * console.log(buf.readUInt16BE(0).toString(16));
+   * // Prints: 1234
+   * console.log(buf.readUInt16BE(1).toString(16));
+   * // Prints: 3456
+   * ```
+   * @since v0.5.5
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - 2`.
+   */
+  readUInt16BE(offset = 0) {
+    const view = this.getDataView();
+    return view.getUint16(offset, false);
+  }
+  /**
+   * Reads an unsigned, little-endian 32-bit integer from `buf` at the specified`offset`.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0x12, 0x34, 0x56, 0x78]);
+   *
+   * console.log(buf.readUInt32LE(0).toString(16));
+   * // Prints: 78563412
+   * console.log(buf.readUInt32LE(1).toString(16));
+   * // Throws ERR_OUT_OF_RANGE.
+   * ```
+   * @since v0.5.5
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - 4`.
+   */
+  readUInt32LE(offset = 0) {
+    const view = this.getDataView();
+    return view.getUint32(offset, true);
+  }
+  /**
+   * Reads an unsigned, big-endian 32-bit integer from `buf` at the specified`offset`.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0x12, 0x34, 0x56, 0x78]);
+   *
+   * console.log(buf.readUInt32BE(0).toString(16));
+   * // Prints: 12345678
+   * ```
+   * @since v0.5.5
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - 4`.
+   */
+  readUInt32BE(offset = 0) {
+    const view = this.getDataView();
+    return view.getUint32(offset, false);
+  }
+  /**
+   * Reads a signed 8-bit integer from `buf` at the specified `offset`.
+   *
+   * Integers read from a `Buffer` are interpreted as two's complement signed values.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([-1, 5]);
+   *
+   * console.log(buf.readInt8(0));
+   * // Prints: -1
+   * console.log(buf.readInt8(1));
+   * // Prints: 5
+   * console.log(buf.readInt8(2));
+   * // Throws ERR_OUT_OF_RANGE.
+   * ```
+   * @since v0.5.0
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - 1`.
+   */
+  readInt8(offset = 0) {
+    const view = this.getDataView();
+    return view.getInt8(offset);
+  }
+  /**
+   * Reads a signed, little-endian 16-bit integer from `buf` at the specified`offset`.
+   *
+   * Integers read from a `Buffer` are interpreted as two's complement signed values.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0, 5]);
+   *
+   * console.log(buf.readInt16LE(0));
+   * // Prints: 1280
+   * console.log(buf.readInt16LE(1));
+   * // Throws ERR_OUT_OF_RANGE.
+   * ```
+   * @since v0.5.5
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - 2`.
+   */
+  readInt16LE(offset = 0) {
+    const view = this.getDataView();
+    return view.getInt16(offset, true);
+  }
+  /**
+   * Reads a signed, big-endian 16-bit integer from `buf` at the specified `offset`.
+   *
+   * Integers read from a `Buffer` are interpreted as two's complement signed values.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0, 5]);
+   *
+   * console.log(buf.readInt16BE(0));
+   * // Prints: 5
+   * ```
+   * @since v0.5.5
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - 2`.
+   */
+  readInt16BE(offset = 0) {
+    const view = this.getDataView();
+    return view.getInt16(offset, false);
+  }
+  /**
+   * Reads a signed, little-endian 32-bit integer from `buf` at the specified`offset`.
+   *
+   * Integers read from a `Buffer` are interpreted as two's complement signed values.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0, 0, 0, 5]);
+   *
+   * console.log(buf.readInt32LE(0));
+   * // Prints: 83886080
+   * console.log(buf.readInt32LE(1));
+   * // Throws ERR_OUT_OF_RANGE.
+   * ```
+   * @since v0.5.5
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - 4`.
+   */
+  readInt32LE(offset = 0) {
+    const view = this.getDataView();
+    return view.getInt32(offset, true);
+  }
+  /**
+   * Reads a signed, big-endian 32-bit integer from `buf` at the specified `offset`.
+   *
+   * Integers read from a `Buffer` are interpreted as two's complement signed values.
+   *
+   * ```js
+   * import { Buffer } from 'node:buffer';
+   *
+   * const buf = Buffer.from([0, 0, 0, 5]);
+   *
+   * console.log(buf.readInt32BE(0));
+   * // Prints: 5
+   * ```
+   * @since v0.5.5
+   * @param [offset=0] Number of bytes to skip before starting to read. Must satisfy `0 <= offset <= buf.length - 4`.
+   */
+  readInt32BE(offset = 0) {
+    const view = this.getDataView();
+    return view.getInt32(offset, false);
+  }
+};
+
+// node_modules/@zwave-js/core/build/esm/crypto/shared.js
+var BLOCK_SIZE = 16;
+function zeroPad(input, blockSize) {
+  const desiredLength = Math.ceil(input.length / blockSize) * blockSize;
+  const ret = new Uint8Array(desiredLength);
+  ret.set(input, 0);
+  return {
+    output: ret,
+    paddingLength: ret.length - input.length
+  };
+}
+function xor(b1, b2) {
+  if (b1.length !== b2.length) {
+    throw new Error("The buffers must have the same length");
+  }
+  const ret = new Uint8Array(b1.length);
+  for (let i = 0; i < b1.length; i++) {
+    ret[i] = b1[i] ^ b2[i];
+  }
+  return ret;
+}
+function decodeX25519KeyDER(key) {
+  return key.subarray(-32);
+}
+function encodeX25519KeyDERPKCS8(key) {
+  return Bytes.concat([
+    Bytes.from("302e020100300506032b656e04220420", "hex"),
+    key
+  ]);
+}
+
+// node_modules/@zwave-js/core/build/esm/crypto/primitives/primitives.browser.js
+function randomBytes(length) {
+  const buffer = new Uint8Array(length);
+  return crypto.getRandomValues(buffer);
+}
+async function encryptAES128ECB(plaintext, key) {
+  return encryptAES128CBC(plaintext, key, new Uint8Array(BLOCK_SIZE).fill(0));
+}
+async function encryptAES128CBC(plaintext, key, iv) {
+  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "AES-CBC" }, true, ["encrypt"]);
+  const ciphertext = await crypto.subtle.encrypt({
+    name: "AES-CBC",
+    iv
+  }, cryptoKey, plaintext);
+  const paddedLength = Math.ceil(plaintext.length / BLOCK_SIZE) * BLOCK_SIZE;
+  return new Uint8Array(ciphertext, 0, paddedLength);
+}
+async function decryptAES256CBC(ciphertext, key, iv) {
+  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "AES-CBC" }, true, ["decrypt"]);
+  const plaintext = await crypto.subtle.decrypt({
+    name: "AES-CBC",
+    iv
+  }, cryptoKey, ciphertext);
+  return new Uint8Array(plaintext);
+}
+async function encryptAES128OFB(plaintext, key, iv) {
+  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "AES-CTR" }, true, [
+    "encrypt",
+    "decrypt"
+  ]);
+  const ret = new Uint8Array(plaintext.length);
+  let counter = zeroPad(iv, BLOCK_SIZE).output;
+  for (let offset = 0; offset < plaintext.length - 1; offset += BLOCK_SIZE) {
+    const input = plaintext.slice(offset, offset + BLOCK_SIZE);
+    const ciphertextBuffer = await crypto.subtle.encrypt({
+      name: "AES-CTR",
+      counter,
+      length: BLOCK_SIZE * 8
+    }, cryptoKey, input);
+    const ciphertext = new Uint8Array(ciphertextBuffer);
+    ret.set(ciphertext, offset);
+    counter = zeroPad(xor(ciphertext, input), BLOCK_SIZE).output;
+  }
+  return ret;
+}
+async function decryptAES128OFB(ciphertext, key, iv) {
+  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "AES-CTR" }, true, [
+    "encrypt",
+    "decrypt"
+  ]);
+  const ret = new Uint8Array(ciphertext.length);
+  let counter = zeroPad(iv, BLOCK_SIZE).output;
+  for (let offset = 0; offset < ciphertext.length - 1; offset += BLOCK_SIZE) {
+    const input = ciphertext.slice(offset, offset + BLOCK_SIZE);
+    const plaintextBuffer = await crypto.subtle.decrypt({
+      name: "AES-CTR",
+      counter,
+      length: BLOCK_SIZE * 8
+    }, cryptoKey, input);
+    const plaintext = new Uint8Array(plaintextBuffer);
+    ret.set(plaintext, offset);
+    counter = zeroPad(xor(plaintext, input), BLOCK_SIZE).output;
+  }
+  return ret;
+}
+async function encryptAES128CCM(plaintext, key, iv, additionalData, authTagLength) {
+  const M = authTagLength - 2 >> 1;
+  const L = 15 - iv.length;
+  const hasAData = additionalData.length > 0;
+  const plaintextBlocks = getCCMPlaintextBlocks(plaintext);
+  const B = getCCMAuthenticationBlocks(hasAData, M, L, iv, plaintext, additionalData, plaintextBlocks);
+  const X = await computeCBCMac(B, key);
+  const A0 = new Uint8Array(BLOCK_SIZE);
+  A0[0] = L - 1 & 7;
+  A0.set(iv, 1);
+  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "AES-CTR" }, true, ["encrypt"]);
+  const encryptionInput = Bytes.concat([X, plaintextBlocks]);
+  const encryptionOutput = await crypto.subtle.encrypt({
+    name: "AES-CTR",
+    counter: A0,
+    length: BLOCK_SIZE * 8
+  }, cryptoKey, encryptionInput);
+  const authTagAndCiphertext = new Uint8Array(encryptionOutput);
+  const authTag = authTagAndCiphertext.slice(0, authTagLength);
+  const ciphertext = authTagAndCiphertext.slice(BLOCK_SIZE).slice(0, plaintext.length);
+  return { ciphertext, authTag };
+}
+async function computeCBCMac(B, key) {
+  const macOutput = await encryptAES128CBC(B, key, new Uint8Array(BLOCK_SIZE).fill(0));
+  const X = macOutput.subarray(-BLOCK_SIZE);
+  return X;
+}
+function getCCMPlaintextBlocks(plaintext) {
+  const plaintextBlocks = new Bytes(
+    // plaintext | ...padding
+    Math.ceil(plaintext.length / BLOCK_SIZE) * BLOCK_SIZE
+  );
+  plaintextBlocks.set(plaintext, 0);
+  return plaintextBlocks;
+}
+function getCCMAuthenticationBlocks(hasAData, M, L, iv, plaintext, additionalData, plaintextBlocks) {
+  const B0 = new Bytes(BLOCK_SIZE);
+  B0[0] = (hasAData ? 64 : 0) | (M & 7) << 3 | L - 1 & 7;
+  B0.set(iv, 1);
+  B0.writeUIntBE(plaintext.length, 16 - L, L);
+  let aDataLength;
+  if (additionalData.length === 0) {
+    aDataLength = new Bytes(0);
+  } else if (additionalData.length < 65280) {
+    aDataLength = new Bytes(2);
+    aDataLength.writeUInt16BE(additionalData.length, 0);
+  } else if (additionalData.length <= 4294967295) {
+    aDataLength = new Bytes(6);
+    aDataLength.writeUInt16BE(65534, 0);
+    aDataLength.writeUInt32BE(additionalData.length, 2);
+  } else {
+    aDataLength = new Bytes(10);
+    aDataLength.writeUInt16BE(65535, 0);
+    aDataLength.writeBigUInt64BE(BigInt(additionalData.length), 2);
+  }
+  const aDataBlocks = new Bytes(
+    // B0 | aDataLength | additionalData | ...padding
+    Math.ceil((BLOCK_SIZE + aDataLength.length + additionalData.length) / BLOCK_SIZE) * BLOCK_SIZE
+  );
+  aDataBlocks.set(B0, 0);
+  aDataBlocks.set(aDataLength, BLOCK_SIZE);
+  aDataBlocks.set(additionalData, BLOCK_SIZE + aDataLength.length);
+  const B = Bytes.concat([aDataBlocks, plaintextBlocks]);
+  return B;
+}
+async function decryptAES128CCM(ciphertext, key, iv, additionalData, authTag) {
+  const M = authTag.length - 2 >> 1;
+  const L = 15 - iv.length;
+  const hasAData = additionalData.length > 0;
+  const A0 = new Uint8Array(BLOCK_SIZE);
+  A0[0] = L - 1 & 7;
+  A0.set(iv, 1);
+  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "AES-CTR" }, true, ["decrypt"]);
+  const paddedAuthTag = new Bytes(BLOCK_SIZE);
+  paddedAuthTag.set(authTag, 0);
+  const decryptionInput = Bytes.concat([paddedAuthTag, ciphertext]);
+  const decryptionOutput = await crypto.subtle.decrypt({
+    name: "AES-CTR",
+    counter: A0,
+    length: BLOCK_SIZE * 8
+  }, cryptoKey, decryptionInput);
+  const plaintextAndT = new Uint8Array(decryptionOutput);
+  const T = plaintextAndT.slice(0, authTag.length);
+  const plaintext = plaintextAndT.slice(BLOCK_SIZE);
+  const plaintextBlocks = getCCMPlaintextBlocks(plaintext);
+  const B = getCCMAuthenticationBlocks(hasAData, M, L, iv, plaintext, additionalData, plaintextBlocks);
+  const X = await computeCBCMac(B, key);
+  const expectedAuthTag = X.subarray(0, authTag.length);
+  const emptyPlaintext = new Uint8Array();
+  let result = 0;
+  if (T.length !== expectedAuthTag.length) {
+    return { plaintext: emptyPlaintext, authOK: false };
+  }
+  for (let i = 0; i < T.length; i++) {
+    result |= T[i] ^ expectedAuthTag[i];
+  }
+  if (result === 0) {
+    return { plaintext, authOK: true };
+  } else {
+    return { plaintext: emptyPlaintext, authOK: false };
+  }
+}
+async function digest(algorithm, data) {
+  if (algorithm === "md5") {
+    algorithm = "sha-256";
+  }
+  const output = await crypto.subtle.digest(algorithm, data);
+  return new Uint8Array(output);
+}
+async function generateECDHKeyPair() {
+  const pair = await crypto.subtle.generateKey("X25519", true, ["deriveKey"]);
+  const publicKey = new Uint8Array(await crypto.subtle.exportKey("raw", pair.publicKey));
+  const privateKey = decodeX25519KeyDER(new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey)));
+  return { publicKey, privateKey };
+}
+async function keyPairFromRawECDHPrivateKey(privateKey) {
+  const privateKeyObject = await crypto.subtle.importKey("pkcs8", encodeX25519KeyDERPKCS8(privateKey), "X25519", true, ["deriveKey"]);
+  const jwk = await crypto.subtle.exportKey("jwk", privateKeyObject);
+  delete jwk.d;
+  const publicKeyObject = await crypto.subtle.importKey("jwk", jwk, "X25519", true, []);
+  const publicKey = new Uint8Array(await crypto.subtle.exportKey("raw", publicKeyObject));
+  return { publicKey, privateKey };
+}
+async function deriveSharedECDHSecret(keyPair) {
+  const publicKey = await crypto.subtle.importKey("raw", keyPair.publicKey, "X25519", true, []);
+  const privateKey = await crypto.subtle.importKey("pkcs8", encodeX25519KeyDERPKCS8(keyPair.privateKey), "X25519", true, ["deriveBits"]);
+  const secret = await crypto.subtle.deriveBits({
+    name: "X25519",
+    public: publicKey
+  }, privateKey, null);
+  return new Uint8Array(secret);
+}
+var primitives = {
+  randomBytes,
+  encryptAES128ECB,
+  encryptAES128CBC,
+  encryptAES128OFB,
+  decryptAES128OFB,
+  encryptAES128CCM,
+  decryptAES128CCM,
+  decryptAES256CBC,
+  digest,
+  generateECDHKeyPair,
+  keyPairFromRawECDHPrivateKey,
+  deriveSharedECDHSecret
+};
+
+// node_modules/@zwave-js/core/build/esm/crypto/operations.js
+var { decryptAES128OFB: decryptAES128OFB2, encryptAES128CBC: encryptAES128CBC2, encryptAES128ECB: encryptAES128ECB2, encryptAES128OFB: encryptAES128OFB2, encryptAES128CCM: encryptAES128CCM2, decryptAES128CCM: decryptAES128CCM2, decryptAES256CBC: decryptAES256CBC2, randomBytes: randomBytes2, digest: digest2, generateECDHKeyPair: generateECDHKeyPair2, deriveSharedECDHSecret: deriveSharedECDHSecret2, keyPairFromRawECDHPrivateKey: keyPairFromRawECDHPrivateKey2 } = primitives;
+var Z128 = new Uint8Array(16).fill(0);
+var R128 = Bytes.from("00000000000000000000000000000087", "hex");
+var constantPRK = new Uint8Array(16).fill(51);
+var constantTE = new Uint8Array(15).fill(136);
+var constantNK = new Uint8Array(15).fill(85);
+var constantNonce = new Uint8Array(16).fill(38);
+var constantEI = new Uint8Array(15).fill(136);
+
+// node_modules/@zwave-js/core/build/esm/error/ZWaveError.js
+var ZWaveErrorCodes;
+(function(ZWaveErrorCodes2) {
+  ZWaveErrorCodes2[ZWaveErrorCodes2["PacketFormat_Truncated"] = 0] = "PacketFormat_Truncated";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["PacketFormat_Invalid"] = 1] = "PacketFormat_Invalid";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["PacketFormat_Checksum"] = 2] = "PacketFormat_Checksum";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["PacketFormat_InvalidPayload"] = 3] = "PacketFormat_InvalidPayload";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["PacketFormat_DecryptionFailed"] = 4] = "PacketFormat_DecryptionFailed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Driver_Failed"] = 100] = "Driver_Failed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Driver_Reset"] = 101] = "Driver_Reset";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Driver_Destroyed"] = 102] = "Driver_Destroyed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Driver_NotReady"] = 103] = "Driver_NotReady";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Driver_InvalidDataReceived"] = 104] = "Driver_InvalidDataReceived";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Driver_NotSupported"] = 105] = "Driver_NotSupported";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Driver_NoPriority"] = 106] = "Driver_NoPriority";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Driver_InvalidCache"] = 107] = "Driver_InvalidCache";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Driver_InvalidOptions"] = 108] = "Driver_InvalidOptions";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Driver_NoSecurity"] = 109] = "Driver_NoSecurity";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Driver_FeatureDisabled"] = 110] = "Driver_FeatureDisabled";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Driver_TaskRemoved"] = 111] = "Driver_TaskRemoved";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_Timeout"] = 200] = "Controller_Timeout";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_NodeTimeout"] = 201] = "Controller_NodeTimeout";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_MessageDropped"] = 202] = "Controller_MessageDropped";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_ResponseNOK"] = 203] = "Controller_ResponseNOK";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_CallbackNOK"] = 204] = "Controller_CallbackNOK";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_Jammed"] = 205] = "Controller_Jammed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_Reset"] = 206] = "Controller_Reset";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_InclusionFailed"] = 207] = "Controller_InclusionFailed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_ExclusionFailed"] = 208] = "Controller_ExclusionFailed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_NotSupported"] = 209] = "Controller_NotSupported";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_InterviewRestarted"] = 210] = "Controller_InterviewRestarted";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_NodeNotFound"] = 211] = "Controller_NodeNotFound";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_EndpointNotFound"] = 212] = "Controller_EndpointNotFound";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_NodeRemoved"] = 213] = "Controller_NodeRemoved";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_NodeInsecureCommunication"] = 214] = "Controller_NodeInsecureCommunication";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_MessageExpired"] = 215] = "Controller_MessageExpired";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_CommandError"] = 216] = "Controller_CommandError";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_MessageTooLarge"] = 217] = "Controller_MessageTooLarge";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Controller_NotSupportedForLongRange"] = 218] = "Controller_NotSupportedForLongRange";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["FWUpdateService_MissingInformation"] = 260] = "FWUpdateService_MissingInformation";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["FWUpdateService_RequestError"] = 261] = "FWUpdateService_RequestError";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["FWUpdateService_IntegrityCheckFailed"] = 262] = "FWUpdateService_IntegrityCheckFailed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["FWUpdateService_DeviceMismatch"] = 263] = "FWUpdateService_DeviceMismatch";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["NVM_NotSupported"] = 280] = "NVM_NotSupported";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["NVM_InvalidJSON"] = 281] = "NVM_InvalidJSON";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["NVM_ObjectNotFound"] = 282] = "NVM_ObjectNotFound";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["NVM_InvalidFormat"] = 283] = "NVM_InvalidFormat";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["NVM_NoSpace"] = 284] = "NVM_NoSpace";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["NVM_NotOpen"] = 285] = "NVM_NotOpen";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["CC_Invalid"] = 300] = "CC_Invalid";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["CC_NoNodeID"] = 301] = "CC_NoNodeID";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["CC_NotSupported"] = 302] = "CC_NotSupported";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["CC_NotImplemented"] = 303] = "CC_NotImplemented";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["CC_NoAPI"] = 304] = "CC_NoAPI";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["CC_OperationFailed"] = 305] = "CC_OperationFailed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Deserialization_NotImplemented"] = 320] = "Deserialization_NotImplemented";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Arithmetic"] = 321] = "Arithmetic";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Argument_Invalid"] = 322] = "Argument_Invalid";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Config_Invalid"] = 340] = "Config_Invalid";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Config_NotFound"] = 341] = "Config_NotFound";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Config_CircularImport"] = 342] = "Config_CircularImport";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Config_Update_RegistryError"] = 343] = "Config_Update_RegistryError";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Config_Update_PackageManagerNotFound"] = 344] = "Config_Update_PackageManagerNotFound";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Config_Update_InstallFailed"] = 345] = "Config_Update_InstallFailed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["RemoveFailedNode_Failed"] = 360] = "RemoveFailedNode_Failed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["RemoveFailedNode_NodeOK"] = 361] = "RemoveFailedNode_NodeOK";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["ReplaceFailedNode_Failed"] = 362] = "ReplaceFailedNode_Failed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["ReplaceFailedNode_NodeOK"] = 363] = "ReplaceFailedNode_NodeOK";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["OTW_Update_Busy"] = 380] = "OTW_Update_Busy";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["HealthCheck_Busy"] = 400] = "HealthCheck_Busy";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["LinkReliabilityCheck_Busy"] = 401] = "LinkReliabilityCheck_Busy";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["ConfigurationCC_FirstParameterNumber"] = 1e3] = "ConfigurationCC_FirstParameterNumber";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["ConfigurationCC_NoLegacyScanOnNewDevices"] = 1001] = "ConfigurationCC_NoLegacyScanOnNewDevices";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["ConfigurationCC_NoResetToDefaultOnLegacyDevices"] = 1002] = "ConfigurationCC_NoResetToDefaultOnLegacyDevices";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["SupervisionCC_CommandFailed"] = 1100] = "SupervisionCC_CommandFailed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["ManufacturerProprietaryCC_NoManufacturerId"] = 1200] = "ManufacturerProprietaryCC_NoManufacturerId";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["AssociationCC_InvalidGroup"] = 1300] = "AssociationCC_InvalidGroup";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["AssociationCC_NotAllowed"] = 1301] = "AssociationCC_NotAllowed";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["SecurityCC_NoNonce"] = 1400] = "SecurityCC_NoNonce";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Security2CC_NoSPAN"] = 1401] = "Security2CC_NoSPAN";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Security2CC_NotInitialized"] = 1402] = "Security2CC_NotInitialized";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Security2CC_NotSecure"] = 1403] = "Security2CC_NotSecure";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Security2CC_MissingExtension"] = 1404] = "Security2CC_MissingExtension";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Security2CC_CannotDecode"] = 1405] = "Security2CC_CannotDecode";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Security2CC_InvalidQRCode"] = 1406] = "Security2CC_InvalidQRCode";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Security2CC_NoMPAN"] = 1407] = "Security2CC_NoMPAN";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Security2CC_CannotDecodeMulticast"] = 1408] = "Security2CC_CannotDecodeMulticast";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["FirmwareUpdateCC_Busy"] = 1500] = "FirmwareUpdateCC_Busy";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["FirmwareUpdateCC_NotUpgradable"] = 1501] = "FirmwareUpdateCC_NotUpgradable";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["FirmwareUpdateCC_TargetNotFound"] = 1502] = "FirmwareUpdateCC_TargetNotFound";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["FirmwareUpdateCC_FailedToStart"] = 1503] = "FirmwareUpdateCC_FailedToStart";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["FirmwareUpdateCC_FailedToAbort"] = 1504] = "FirmwareUpdateCC_FailedToAbort";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["FirmwareUpdateCC_Timeout"] = 1505] = "FirmwareUpdateCC_Timeout";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Invalid_Firmware_File"] = 1506] = "Invalid_Firmware_File";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["Unsupported_Firmware_Format"] = 1507] = "Unsupported_Firmware_Format";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["FirmwareUpdateCC_NetworkBusy"] = 1508] = "FirmwareUpdateCC_NetworkBusy";
+  ZWaveErrorCodes2[ZWaveErrorCodes2["PowerlevelCC_UnsupportedTestNode"] = 1600] = "PowerlevelCC_UnsupportedTestNode";
+})(ZWaveErrorCodes || (ZWaveErrorCodes = {}));
+function getErrorSuffix(code) {
+  return `ZW${code.toString().padStart(4, "0")}`;
+}
+function appendErrorSuffix(message, code) {
+  const suffix = ` (${getErrorSuffix(code)})`;
+  if (!message.endsWith(suffix))
+    message += suffix;
+  return message;
+}
+var ZWaveError = class _ZWaveError extends Error {
+  message;
+  code;
+  context;
+  transactionSource;
+  constructor(message, code, context, transactionSource) {
+    super();
+    this.message = message;
+    this.code = code;
+    this.context = context;
+    this.transactionSource = transactionSource;
+    this.message = appendErrorSuffix(message, code);
+    Object.setPrototypeOf(this, _ZWaveError.prototype);
+    Object.getPrototypeOf(this).name = "ZWaveError";
+    if (typeof transactionSource === "string") {
+      this.stack = `ZWaveError: ${this.message}
+${transactionSource}`;
+    }
+  }
+};
 
 // node_modules/@zwave-js/core/build/esm/definitions/Protocol.js
 var Protocols;
@@ -931,6 +2629,262 @@ var ProtocolVersion;
   ProtocolVersion2[ProtocolVersion2["4.2x / 5.0x"] = 2] = "4.2x / 5.0x";
   ProtocolVersion2[ProtocolVersion2["4.5x / 6.0x"] = 3] = "4.5x / 6.0x";
 })(ProtocolVersion || (ProtocolVersion = {}));
+
+// node_modules/@zwave-js/core/build/esm/definitions/SecurityClass.js
+var SecurityClass;
+(function(SecurityClass2) {
+  SecurityClass2[SecurityClass2["Temporary"] = -2] = "Temporary";
+  SecurityClass2[SecurityClass2["None"] = -1] = "None";
+  SecurityClass2[SecurityClass2["S2_Unauthenticated"] = 0] = "S2_Unauthenticated";
+  SecurityClass2[SecurityClass2["S2_Authenticated"] = 1] = "S2_Authenticated";
+  SecurityClass2[SecurityClass2["S2_AccessControl"] = 2] = "S2_AccessControl";
+  SecurityClass2[SecurityClass2["S0_Legacy"] = 7] = "S0_Legacy";
+})(SecurityClass || (SecurityClass = {}));
+var securityClassOrder = [
+  SecurityClass.S2_AccessControl,
+  SecurityClass.S2_Authenticated,
+  SecurityClass.S2_Unauthenticated,
+  SecurityClass.S0_Legacy
+];
+
+// node_modules/@zwave-js/core/build/esm/dsk/index.js
+function dskToString(dsk) {
+  if (dsk.length !== 16) {
+    throw new ZWaveError(`DSK length must be 16 bytes, got ${dsk.length}`, ZWaveErrorCodes.Argument_Invalid);
+  }
+  let ret = "";
+  for (let i = 0; i < 16; i += 2) {
+    if (i > 0)
+      ret += "-";
+    ret += Bytes.view(dsk).readUInt16BE(i).toString(10).padStart(5, "0");
+  }
+  return ret;
+}
+function isValidDSK(dsk) {
+  const patternMatches = /^(\d{5}-){7}\d{5}$/.test(dsk);
+  if (!patternMatches)
+    return false;
+  return dsk.split("-").map((p) => parseInt(p, 10)).every((p) => p <= 65535);
+}
+
+// node_modules/@zwave-js/core/build/esm/qr/definitions.js
+var onlyDigitsRegex = /^\d+$/;
+var minQRCodeLength = 52;
+var QRCodeVersion;
+(function(QRCodeVersion2) {
+  QRCodeVersion2[QRCodeVersion2["S2"] = 0] = "S2";
+  QRCodeVersion2[QRCodeVersion2["SmartStart"] = 1] = "SmartStart";
+})(QRCodeVersion || (QRCodeVersion = {}));
+var ProvisioningInformationType;
+(function(ProvisioningInformationType2) {
+  ProvisioningInformationType2[ProvisioningInformationType2["ProductType"] = 0] = "ProductType";
+  ProvisioningInformationType2[ProvisioningInformationType2["ProductId"] = 1] = "ProductId";
+  ProvisioningInformationType2[ProvisioningInformationType2["MaxInclusionRequestInterval"] = 2] = "MaxInclusionRequestInterval";
+  ProvisioningInformationType2[ProvisioningInformationType2["UUID16"] = 3] = "UUID16";
+  ProvisioningInformationType2[ProvisioningInformationType2["SupportedProtocols"] = 4] = "SupportedProtocols";
+  ProvisioningInformationType2[ProvisioningInformationType2["Name"] = 50] = "Name";
+  ProvisioningInformationType2[ProvisioningInformationType2["Location"] = 51] = "Location";
+  ProvisioningInformationType2[ProvisioningInformationType2["SmartStartInclusionSetting"] = 52] = "SmartStartInclusionSetting";
+  ProvisioningInformationType2[ProvisioningInformationType2["AdvancedJoining"] = 53] = "AdvancedJoining";
+  ProvisioningInformationType2[ProvisioningInformationType2["BootstrappingMode"] = 54] = "BootstrappingMode";
+  ProvisioningInformationType2[ProvisioningInformationType2["NetworkStatus"] = 55] = "NetworkStatus";
+})(ProvisioningInformationType || (ProvisioningInformationType = {}));
+
+// node_modules/@zwave-js/core/build/esm/values/Primitive.js
+var IntegerLimits = Object.freeze({
+  UInt8: Object.freeze({ min: 0, max: 255 }),
+  UInt16: Object.freeze({ min: 0, max: 65535 }),
+  UInt24: Object.freeze({ min: 0, max: 16777215 }),
+  UInt32: Object.freeze({ min: 0, max: 4294967295 }),
+  Int8: Object.freeze({ min: -128, max: 127 }),
+  Int16: Object.freeze({ min: -32768, max: 32767 }),
+  Int24: Object.freeze({ min: -8388608, max: 8388607 }),
+  Int32: Object.freeze({ min: -2147483648, max: 2147483647 })
+});
+function parseBitMask(mask, startValue = 1, numBits = mask.length * 8) {
+  const ret = [];
+  for (let index = 0; index < numBits; index++) {
+    const byteNum = index >>> 3;
+    const bitNum = index % 8;
+    if ((mask[byteNum] & 2 ** bitNum) !== 0) {
+      ret.push(index + startValue);
+    }
+  }
+  return ret;
+}
+
+// node_modules/@zwave-js/core/build/esm/qr/utils.js
+function readNumber(qr, offset, length) {
+  return parseInt(qr.slice(offset, offset + length), 10);
+}
+function fail(reason) {
+  throw new ZWaveError(`Invalid QR code: ${reason}`, ZWaveErrorCodes.Security2CC_InvalidQRCode);
+}
+function readLevel(qr, offset) {
+  const ret = readNumber(qr, offset, 2);
+  if (ret > 99)
+    fail("invalid data");
+  return ret;
+}
+function readUInt8(qr, offset) {
+  const ret = readNumber(qr, offset, 3);
+  if (ret > 255)
+    fail("invalid data");
+  return ret;
+}
+function readUInt16(qr, offset) {
+  const ret = readNumber(qr, offset, 5);
+  if (ret > 65535)
+    fail("invalid data");
+  return ret;
+}
+function parseTLVData(type, data) {
+  switch (type) {
+    case ProvisioningInformationType.ProductType: {
+      const deviceClasses = readUInt16(data, 0);
+      const installerIconType = readUInt16(data, 5);
+      const ret = {
+        genericDeviceClass: deviceClasses >>> 8,
+        specificDeviceClass: deviceClasses & 255,
+        installerIconType
+      };
+      return ret;
+    }
+    case ProvisioningInformationType.ProductId: {
+      const manufacturerId = readUInt16(data, 0);
+      const productType = readUInt16(data, 5);
+      const productId = readUInt16(data, 10);
+      const applicationVersionNumeric = readUInt16(data, 15);
+      const applicationVersion = `${applicationVersionNumeric >>> 8}.${applicationVersionNumeric & 255}`;
+      const ret = {
+        manufacturerId,
+        productType,
+        productId,
+        applicationVersion
+      };
+      return ret;
+    }
+    case ProvisioningInformationType.MaxInclusionRequestInterval: {
+      const maxInclusionRequestInterval = 128 * readLevel(data, 0);
+      const ret = {
+        maxInclusionRequestInterval
+      };
+      return ret;
+    }
+    case ProvisioningInformationType.UUID16: {
+      const buffer = new Bytes(16);
+      const presentationFormat = readLevel(data, 0);
+      if (presentationFormat !== 0)
+        return;
+      for (let chunk = 0; chunk < 8; chunk++) {
+        const value = readUInt16(data, 2 + chunk * 5);
+        buffer.writeUInt16BE(value, chunk * 2);
+      }
+      const ret = {
+        uuid: buffer.toString("hex")
+      };
+      return ret;
+    }
+    case ProvisioningInformationType.SupportedProtocols: {
+      const bitMask = Uint8Array.from([
+        data.length === 2 ? readLevel(data, 0) : data.length === 3 ? readUInt8(data, 0) : data.length === 5 ? readUInt16(data, 0) : 0
+      ]);
+      const supportedProtocols = parseBitMask(bitMask, Protocols.ZWave);
+      const ret = {
+        supportedProtocols
+      };
+      return ret;
+    }
+  }
+}
+function parseTLV(qr) {
+  let offset = 0;
+  if (qr.length - offset < 4)
+    fail("incomplete TLV block");
+  const typeCritical = readLevel(qr, offset);
+  const type = typeCritical >>> 1;
+  const critical = !!(typeCritical & 1);
+  const length = readLevel(qr, offset + 2);
+  offset += 4;
+  if (qr.length - offset < length)
+    fail("incomplete TLV block");
+  const data = qr.slice(offset, offset + length);
+  offset += length;
+  const parsed = parseTLVData(type, data);
+  if (!parsed && critical)
+    fail("Unsupported critical TLV block");
+  let entry;
+  if (parsed) {
+    entry = {
+      type,
+      ...parsed
+    };
+  } else {
+    entry = {
+      type,
+      [ProvisioningInformationType[type]]: data
+    };
+  }
+  return {
+    entry,
+    charsRead: offset
+  };
+}
+
+// node_modules/@zwave-js/core/build/esm/qr/parse.js
+async function parseQRCodeString(qr) {
+  qr = qr.trim();
+  if (!qr.startsWith("90"))
+    fail("must start with 90");
+  if (qr.length < minQRCodeLength)
+    fail("too short");
+  if (!onlyDigitsRegex.test(qr))
+    fail("contains invalid characters");
+  const version = readLevel(qr, 2);
+  if (version > QRCodeVersion.SmartStart)
+    fail("invalid version");
+  const checksum = readUInt16(qr, 4);
+  const checksumInput = new TextEncoder().encode(qr.slice(9));
+  const hashResult = await digest2("sha-1", checksumInput);
+  const expectedChecksum = Bytes.view(hashResult).readUInt16BE(0);
+  if (checksum !== expectedChecksum)
+    fail("invalid checksum");
+  const requestedKeysBitmask = readUInt8(qr, 9);
+  const requestedSecurityClasses = parseBitMask([requestedKeysBitmask], SecurityClass.S2_Unauthenticated);
+  if (!requestedSecurityClasses.every((k) => k in SecurityClass)) {
+    fail("invalid security class requested");
+  }
+  let offset = 12;
+  const dsk = new Bytes(16);
+  for (let dskBlock = 0; dskBlock < 8; dskBlock++) {
+    const block = readUInt16(qr, offset);
+    dsk.writeUInt16BE(block, dskBlock * 2);
+    offset += 5;
+  }
+  const ret = {
+    version,
+    // This seems like a duplication, but it's more convenient for applications to not have to copy this field over
+    requestedSecurityClasses,
+    securityClasses: [...requestedSecurityClasses],
+    dsk: dskToString(dsk)
+  };
+  let hasProductID = false;
+  let hasProductType = false;
+  while (offset < qr.length) {
+    const { entry: { type, ...data }, charsRead } = parseTLV(qr.slice(offset));
+    offset += charsRead;
+    if (type === ProvisioningInformationType.ProductId) {
+      hasProductID = true;
+    } else if (type === ProvisioningInformationType.ProductType) {
+      hasProductType = true;
+    }
+    Object.assign(ret, data);
+  }
+  if (!hasProductID || !hasProductType) {
+    fail("missing required fields");
+  }
+  return ret;
+}
 
 // src/script.ts
 var Z = "Z".charCodeAt(0);
@@ -1115,6 +3069,7 @@ var lblErrorMessage = document.getElementById(
   "error-message"
 );
 var btnGenerate = document.getElementById("generate");
+var btnParse = document.getElementById("parse");
 var lblQRText = document.getElementById(
   "qr-code-text"
 );
@@ -1273,6 +3228,37 @@ async function update() {
   lblQRText.value = text;
   svgQRCode.innerHTML = svg;
 }
+async function parseQR() {
+  let qr;
+  try {
+    qr = await parseQRCodeString(lblQRText.value);
+  } catch (e) {
+    lblErrorMessage.innerText = e.message;
+    return;
+  }
+  chkS2AccessControl.checked = qr.securityClasses.includes(SecurityClass.S2_AccessControl);
+  chkS2Authenticated.checked = qr.securityClasses.includes(SecurityClass.S2_Authenticated);
+  chkS2Unauthenticated.checked = qr.securityClasses.includes(SecurityClass.S2_Unauthenticated);
+  chkS0.checked = qr.securityClasses.includes(SecurityClass.S0_Legacy);
+  chkProtocol.checked = qr.supportedProtocols !== void 0;
+  chkProtocolZWave.checked = qr.supportedProtocols?.includes(Protocols.ZWave) ?? false;
+  chkProtocolZWaveLR.checked = qr.supportedProtocols?.includes(Protocols.ZWaveLongRange) ?? false;
+  txtDSK.value = qr.dsk;
+  txtDeviceClassGeneric.value = qr.genericDeviceClass.toString(10);
+  lblDeviceClassGenericHex.innerText = "0x" + qr.genericDeviceClass.toString(16).padStart(4, "0");
+  txtDeviceClassSpecific.value = qr.specificDeviceClass.toString(10);
+  lblDeviceClassSpecificHex.innerText = "0x" + qr.specificDeviceClass.toString(16).padStart(4, "0");
+  txtDeviceClassIcon.value = qr.installerIconType.toString(10);
+  lblDeviceClassIconHex.innerText = "0x" + qr.installerIconType.toString(16).padStart(4, "0");
+  txtManufacturerId.value = qr.manufacturerId.toString(10);
+  lblManufacturerIdHex.innerText = "0x" + qr.manufacturerId.toString(16).padStart(4, "0");
+  txtProductType.value = qr.productType.toString(10);
+  lblProductTypeHex.innerText = "0x" + qr.productType.toString(16).padStart(4, "0");
+  txtProductId.value = qr.productId.toString(10);
+  lblProductIdHex.innerText = "0x" + qr.productId.toString(16).padStart(4, "0");
+  txtVersionMajor.value = qr.applicationVersion.split(".")[0];
+  txtVersionMinor.value = qr.applicationVersion.split(".")[1];
+}
 for (const chk of [
   chkS0,
   chkS2AccessControl,
@@ -1300,6 +3286,7 @@ for (const txt of [txtVersionMajor, txtVersionMinor]) {
 }
 txtDSK.onblur = update;
 btnGenerate.onclick = update;
+btnParse.onclick = parseQR;
 export {
   generateQRCode
 };

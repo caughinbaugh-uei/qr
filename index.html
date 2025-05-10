@@ -110,7 +110,13 @@
       </div>
 
       <button id="generate" class="button-9">
-        Generate QR Code
+        Generate QR Code ↓
+      </button>
+
+      <span></span>
+
+      <button id="parse" class="button-9">
+        Parse QR Code ↑
       </button>
 
       <div id="error-message"></div>
@@ -119,7 +125,7 @@
     <div class="output">
       <span>QR Code text:</span>
       <textarea
-        readonly
+        not_readonly
         id="qr-code-text"
         rows="3"
         value="9001346230075152535455414243444531323334352122232425001016387007680220655210100000017002880642002122232425414243444511121314153132333435"

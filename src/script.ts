@@ -3,7 +3,8 @@ import {
   QRCodeVersion,
   type QRProvisioningInformation as QRProvisioningInformationFull,
   ProvisioningInformationType,
-} from "@zwave-js/core/qr";
+  parseQRCodeString,
+} from "@zwave-js/core";
 import { isValidDSK } from "@zwave-js/core/dsk";
 import { SecurityClass, Protocols } from "@zwave-js/core/definitions";
 
@@ -241,6 +242,7 @@ const lblErrorMessage = document.getElementById(
 ) as HTMLDivElement;
 
 const btnGenerate = document.getElementById("generate") as HTMLButtonElement;
+const btnParse = document.getElementById("parse") as HTMLButtonElement;
 
 const lblQRText = document.getElementById(
   "qr-code-text"
@@ -422,6 +424,50 @@ async function update() {
   svgQRCode.innerHTML = svg;
 }
 
+async function parseQR() {
+  let qr: QRProvisioningInformation;
+  try {
+    qr = await parseQRCodeString(lblQRText.value);
+  } catch (e) {
+    lblErrorMessage.innerText = e.message;
+    return;
+  }
+  
+  chkS2AccessControl.checked =
+    qr.securityClasses.includes(SecurityClass.S2_AccessControl);
+  chkS2Authenticated.checked =
+    qr.securityClasses.includes(SecurityClass.S2_Authenticated);
+  chkS2Unauthenticated.checked =
+    qr.securityClasses.includes(SecurityClass.S2_Unauthenticated);
+  chkS0.checked = qr.securityClasses.includes(SecurityClass.S0_Legacy);
+  chkProtocol.checked = qr.supportedProtocols !== undefined;
+  chkProtocolZWave.checked =
+    qr.supportedProtocols?.includes(Protocols.ZWave) ?? false;
+  chkProtocolZWaveLR.checked =
+    qr.supportedProtocols?.includes(Protocols.ZWaveLongRange) ?? false;
+  txtDSK.value = qr.dsk;
+  txtDeviceClassGeneric.value = qr.genericDeviceClass.toString(10);
+  lblDeviceClassGenericHex.innerText =
+    "0x" + qr.genericDeviceClass.toString(16).padStart(4, "0");
+  txtDeviceClassSpecific.value = qr.specificDeviceClass.toString(10);
+  lblDeviceClassSpecificHex.innerText =
+    "0x" + qr.specificDeviceClass.toString(16).padStart(4, "0");
+  txtDeviceClassIcon.value = qr.installerIconType.toString(10);
+  lblDeviceClassIconHex.innerText =
+    "0x" + qr.installerIconType.toString(16).padStart(4, "0");
+  txtManufacturerId.value = qr.manufacturerId.toString(10);
+  lblManufacturerIdHex.innerText =
+    "0x" + qr.manufacturerId.toString(16).padStart(4, "0");
+  txtProductType.value = qr.productType.toString(10);
+  lblProductTypeHex.innerText =
+    "0x" + qr.productType.toString(16).padStart(4, "0");
+  txtProductId.value = qr.productId.toString(10);
+  lblProductIdHex.innerText =
+    "0x" + qr.productId.toString(16).padStart(4, "0");
+  txtVersionMajor.value = qr.applicationVersion.split(".")[0];
+  txtVersionMinor.value = qr.applicationVersion.split(".")[1];
+}
+
 // Update when the checkboxes are toggled
 for (const chk of [
   chkS0,
@@ -458,3 +504,4 @@ for (const txt of [txtVersionMajor, txtVersionMinor]) {
 txtDSK.onblur = update;
 
 btnGenerate.onclick = update;
+btnParse.onclick = parseQR;
